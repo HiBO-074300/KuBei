@@ -71,6 +71,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 static void Debug_Printf(const char *fmt, ...);
 static void Ui_UpdateClock(uint8_t force);
+static void Ui_UpdateKeySeq(void);
 static void Ui_Init(void);
 static void Ui_Update(void);
 static void Ui_Task(void);
@@ -92,7 +93,8 @@ static void Ui_Task(void);
 #define UI_BAT_Y    60u     /* 电池电压行 */
 #define UI_CHG_Y    90u     /* 充电电压行 */
 #define UI_KEY_Y    120u    /* 开机键状态行 */
-#define UI_TMKEY_Y  160u    /* TM1668 矩阵键值行 */
+#define UI_TMKEY_Y  160u    /* TM1668 矩阵键号行 */
+#define UI_SEQ_Y    190u    /* TM1668 按下顺序行（先后按下的键） */
 
 static uint32_t s_lastRefresh = 0;
 
@@ -221,6 +223,8 @@ static void Ui_Init(void)
     GUI_DrawString(UI_VAL_X, UI_KEY_Y, "RELEASED", GUI_GREEN, GUI_WHITE, 1);
     GUI_DrawString(UI_ROW_X, UI_TMKEY_Y, "TMKEY:", GUI_GRAY, GUI_WHITE, 1);
     GUI_DrawString(UI_VAL_X, UI_TMKEY_Y, "--", GUI_GRAY, GUI_WHITE, 1);
+    GUI_DrawString(UI_ROW_X, UI_SEQ_Y, "SEQ:", GUI_GRAY, GUI_WHITE, 1);
+    GUI_DrawString(UI_VAL_X, UI_SEQ_Y, "-", GUI_GRAY, GUI_WHITE, 1);
 
     id = Disp_ILI9327_ReadID();
     Debug_Printf("[LCD] controller ID(0x04) = 0x%04X\r\n", id);
@@ -298,6 +302,39 @@ static void Ui_Update(void)
                    pressed ? GUI_RED : GUI_GREEN, GUI_WHITE, 1);
 }
 
+/**
+  * @brief  显示当前按下的键：按按下先后顺序排列，松开的键消失、后面的自动前移
+  *         内容没变化就不重画（避免每 20ms 刷屏）
+  */
+static void Ui_UpdateKeySeq(void)
+{
+    static char s_lastSeq[TM1668_KEY_LIST_MAX + 1u] = "";
+
+    char    buf[TM1668_KEY_LIST_MAX + 1u];
+    uint8_t n = TM1668_GetPressedKeys(buf, (uint8_t)sizeof(buf));
+    uint16_t x = UI_VAL_X;
+    uint8_t  i;
+
+    if (strcmp(buf, s_lastSeq) == 0u) return;      /* 没变化就不重画 */
+    strcpy(s_lastSeq, buf);
+    Debug_Printf("[TM1668] pressed seq = %s\r\n", (n == 0u) ? "-" : buf);
+
+    /* 先擦掉这一行右侧：字符串变短时否则会留下旧字符的残影 */
+    GUI_FillRect(UI_VAL_X, UI_SEQ_Y, (int16_t)(GUI_Width() - 1u),
+                 (int16_t)(UI_SEQ_Y + GUI_CharHeight() - 1u), GUI_WHITE);
+
+    if (n == 0u)
+    {
+        GUI_DrawString(UI_VAL_X, UI_SEQ_Y, "-", GUI_GRAY, GUI_WHITE, 1);
+        return;
+    }
+
+    for (i = 0u; i < n; i++)                       /* 逐个字符画，字符间空 2px */
+    {
+        x = (uint16_t)(GUI_DrawChar((int16_t)x, UI_SEQ_Y, buf[i], GUI_BLUE, GUI_WHITE, 1) + 2u);
+    }
+}
+
 /* 屏幕上显示关机提示，然后断电 */
 static void Ui_ShowPowerOff(void)
 {
@@ -332,6 +369,8 @@ static void Ui_Task(void)
                 GUI_DrawNumber(UI_VAL_X, UI_TMKEY_Y, (int32_t)key, 2, GUI_RED, GUI_WHITE, 1);
             }
         }
+
+        Ui_UpdateKeySeq();          /* 刷新"按下顺序"行（内部变了才重画） */
     }
 
     /* 长按开机键 3 秒 -> 软件断电 */

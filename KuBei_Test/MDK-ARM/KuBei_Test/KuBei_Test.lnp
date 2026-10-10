@@ -48,6 +48,6 @@
 "kubei_test\stm32f1xx_ll_usb.o"
 "kubei_test\system_stm32f1xx.o"
 --library_type=microlib --strict --scatter "KuBei_Test\KuBei_Test.sct"
---summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--summary_stderr --info summarysizes --map --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
 --list "KuBei_Test.map" -o KuBei_Test\KuBei_Test.axf

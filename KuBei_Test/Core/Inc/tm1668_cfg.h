@@ -21,6 +21,8 @@
   *     TM1668 的 DIO 本身是开漏结构，线上必须上拉（内部上拉或外部 4.7K~10K）；
   *     开漏模式下"写 1 = 释放总线（靠上拉变高）"，此时读输入寄存器(IDR)得到的
   *     就是引脚真实电平 —— 所以读键值不用把引脚切成输入模式，也绝不会和芯片"对拉"。
+ *     ★ 手册要求读键时 DIO 外接 1K~10K 上拉（推荐 10K）；STM32 内部上拉约 30~50K 偏弱，
+ *       若按键时有时无，先在 DIO 上补一个 10K 外部上拉再查软件。
   *
   *  ★ 上电初始电平：CubeMX 里三个脚默认都是 Low；TM1668_Init() 会把它们
   *     置到协议要求的空闲态（STB=H、CLK=H、DIO=释放），上电不会误发命令。
@@ -69,6 +71,11 @@ extern "C" {
  * 具体取值以 TM1668 手册的"显示模式设置"为准 */
 #ifndef TM1668_MODE_CMD
 #define TM1668_MODE_CMD            0x03u
+#endif
+
+/* 消抖次数：主循环每 20ms 调一次 TM1668_GetKey()，连续读到相同按键这么多次才上报 */
+#ifndef TM1668_DEBOUNCE_CNT
+#define TM1668_DEBOUNCE_CNT        2u
 #endif
 
 #ifdef __cplusplus
