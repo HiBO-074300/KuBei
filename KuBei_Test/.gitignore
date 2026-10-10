@@ -1,0 +1,16 @@
+# Keil MDK-ARM 编译产物
+MDK-ARM/Objects/
+MDK-ARM/Listings/
+MDK-ARM/DebugConfig/
+*.o *.d *.crf *.axf *.elf *.map *.lnp *.htm
+*.build_log.htm
+*.uvguix.*
+*.uvoptx
+JLinkLog.txt
+*.bak
+
+# 编辑器 / 系统
+.vscode/
+*.user
+.DS_Store
+Thumbs.db
