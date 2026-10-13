@@ -5,6 +5,8 @@
 "kubei_test\power_adc.o"
 "kubei_test\tm1668.o"
 "kubei_test\rtc_pcf8563.o"
+"kubei_test\serial_term.o"
+"kubei_test\send_panel.o"
 "kubei_test\spi_flash.o"
 "kubei_test\w25q64.o"
 "kubei_test\font_lib.o"

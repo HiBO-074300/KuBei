@@ -65,6 +65,8 @@ void Error_Handler(void);
 #define KEY_CLK_GPIO_Port GPIOE
 #define DIO_Pin GPIO_PIN_4
 #define DIO_GPIO_Port GPIOE
+#define FN_CS_Pin GPIO_PIN_13
+#define FN_CS_GPIO_Port GPIOC
 #define ADC_POWER_Pin GPIO_PIN_0
 #define ADC_POWER_GPIO_Port GPIOC
 #define ADC_BAT_Pin GPIO_PIN_1
@@ -87,6 +89,8 @@ void Error_Handler(void);
 #define LCD_RESET_GPIO_Port GPIOC
 #define STM32_USB_EN_Pin GPIO_PIN_8
 #define STM32_USB_EN_GPIO_Port GPIOA
+#define FN_SET_Pin GPIO_PIN_12
+#define FN_SET_GPIO_Port GPIOC
 #define MF522_NPD_Pin GPIO_PIN_6
 #define MF522_NPD_GPIO_Port GPIOB
 #define POW_SOFT_EN_Pin GPIO_PIN_0

@@ -57,6 +57,8 @@ kubei_test\main.o: ../Core/Inc/power_ctrl.h
 kubei_test\main.o: ../Core/Inc/power_adc.h
 kubei_test\main.o: ../Core/Inc/tm1668.h
 kubei_test\main.o: ../Core/Inc/tm1668_cfg.h
+kubei_test\main.o: ../Core/Inc/serial_term.h
+kubei_test\main.o: ../Core/Inc/send_panel.h
 kubei_test\main.o: ../Core/Inc/rtc_pcf8563.h
 kubei_test\main.o: ../Core/Inc/rtc_pcf8563_cfg.h
 kubei_test\main.o: ../Core/Inc/w25q64.h

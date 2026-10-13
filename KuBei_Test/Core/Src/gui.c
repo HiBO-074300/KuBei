@@ -384,7 +384,12 @@ void GUI_DrawImage(int16_t x, int16_t y, uint16_t w, uint16_t h, const uint16_t 
 }
 
 /* ---------------- 文字 ---------------- */
-void GUI_SetAsciiFont(const GUI_Font_t *font) { s_ascii = font; }
+/* font = NULL 时恢复成驱动自带的内置字体（GUI_Init 时绑定的那个） */
+void GUI_SetAsciiFont(const GUI_Font_t *font)
+{
+    s_ascii = (font != NULL) ? font
+                             : ((s_drv != NULL) ? s_drv->builtin_ascii_font : NULL);
+}
 void GUI_SetCjkFont(const GUI_Font_t *font)   { s_cjk   = font; }
 const GUI_Font_t *GUI_AsciiFont(void)         { return s_ascii; }
 const GUI_Font_t *GUI_CjkFont(void)           { return s_cjk; }

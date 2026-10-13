@@ -37,6 +37,8 @@
 #include "power_ctrl.h"
 #include "power_adc.h"        /* PC0/PC1 电源电压采集（33K+33K 分压） */
 #include "tm1668.h"           /* 按键扫描芯片（PE2/PE3/PE4 软件三线） */
+#include "serial_term.h"      /* 串口终端：USART3(9600) 接收显示 */
+#include "send_panel.h"       /* 发送面板：发送框 + 软键盘（TM1668 实体键操作） */
 #include "rtc_pcf8563.h"      /* PCF8563 RTC（I2C1） */
 #include "w25q64.h"           /* SPI1 上的数据 Flash */
 #include "font_lib.h"         /* 仅用于诊断打印字库 ID */
@@ -62,8 +64,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-static uint8_t s_flash1_ok = 0;    /* SPI1 W25Q64 初始化结果 */
-static uint8_t s_fontlib_ok = 0;   /* SPI2 字库          初始化结果 */
+static uint32_t s_lastRefresh = 0;   /* 界面刷新节流（40ms 一轮） */
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,7 +72,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 static void Debug_Printf(const char *fmt, ...);
 static void Ui_UpdateClock(uint8_t force);
-static void Ui_UpdateKeySeq(void);
+static void Ui_UpdateDate(uint8_t force);
 static void Ui_Init(void);
 static void Ui_Update(void);
 static void Ui_Task(void);
@@ -80,27 +81,22 @@ static void Ui_Task(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+extern volatile uint32_t g_uart3IrqCnt;   /* USART3 中断计数（诊断用，见 stm32f1xx_it.c） */
+
 #define POWER_OFF_HOLD_MS   3000u   /* 开机键长按多久关机 */
 
-/* ===== 界面布局（320x240 横屏，只保留：时钟 / 电池充电电压 / 按键信息） =====
- * 默认内置字体 5x7：每字符占 6px（宽 5 + 1 空隙）
- *   标签 "BAT:" = 24px，数值 5 位 = 30px，单位 "mV" = 12px，按此留间距 */
-#define UI_TIME_X   108u    /* HH:MM:SS 起点（12x24 字体，8 字符宽 104px，居中） */
-#define UI_TIME_Y   32u
-#define UI_ROW_X    40u     /* 行标签起始 x */
-#define UI_VAL_X    100u    /* 行数值起始 x（5 位数字结束于 x≈130） */
-#define UI_UNIT_X   146u    /* 单位 "mV" 起始 x，与数值留出约 16px 空隙 */
-#define UI_BAT_Y    60u     /* 电池电压行 */
-#define UI_CHG_Y    90u     /* 充电电压行 */
-#define UI_KEY_Y    120u    /* 开机键状态行 */
-#define UI_TMKEY_Y  160u    /* TM1668 矩阵键号行 */
-#define UI_SEQ_Y    190u    /* TM1668 按下顺序行（先后按下的键） */
-
-static uint32_t s_lastRefresh = 0;
+/* ===== 界面布局（320x240 横屏） =====
+ * 第 1 行（y=0~15，字库 8x16 字体，无标签）：
+ *      左上 = 时间 HH:MM:SS，中间 = 日期 MM-DD，右上 = 电池电压 X.XXV
+ * 串口终端：y=16~159（TERM_ROWS 行 x 8px，约 3/5 屏高）
+ * 底部 y=160~239：预留 */
+#define UI_TOP_Y      0u     /* 第 1 行 y */
+#define UI_TIME_X     2u     /* 时间起点（左上角） */
+#define UI_REFRESH_MS 40u    /* 界面整体刷新周期 */
 
 /**
-  * @brief  通过 USART1(PA9, 115200) 输出调试信息。
-  *         屏幕不亮时，可先用串口助手(115200)看初始化状态和读到的驱动 ID。
+  * @brief  通过 USART1(PA9) 输出调试信息（波特率见 usart.c，当前 9600）。
+  *         屏幕不亮时，可先用串口助手看初始化状态和读到的驱动 ID。
   */
 static void Debug_Printf(const char *fmt, ...)
 {
@@ -128,49 +124,47 @@ static void Flash_Init_And_Report(void)
     static uint8_t gbuf[128];      /* 静态：省栈 */
     uint8_t  st;
     uint32_t id;
+    uint8_t  flash1_ok;            /* SPI1 W25Q64 初始化结果（仅本函数用） */
+    uint8_t  fontlib_ok;           /* SPI2 字库          初始化结果（仅本函数用） */
 
     /* ---- SPI1：W25Q64 ---- */
-    s_flash1_ok = (W25Q64_Init() == 0u) ? 1u : 0u;
+    flash1_ok = (W25Q64_Init() == 0u) ? 1u : 0u;
     id = W25Q64_GetID();
     Debug_Printf("[FLASH1] SPI1 W25Q64 JEDEC ID = 0x%06X (%s)\r\n",
                  (unsigned int)id, W25Q64_DescribeID(id));
-    if (s_flash1_ok)
+    if (flash1_ok)
     {
         st = W25Q64_SelfTest();
         Debug_Printf("[FLASH1] self test %s (code=%u, lastErr=%u)\r\n",
                      (st == 0u) ? "PASS" : "FAIL", st, W25Q64_LastError());
-        s_flash1_ok = (st == 0u) ? 1u : 0u;
+        flash1_ok = (st == 0u) ? 1u : 0u;
     }
 
     /* ---- SPI2：字库（整形后由字库层包装成 GUI_Font_t） ---- */
     st = Disp_FontFlash_Init();
     id = Font_ReadFlashID();
-    s_fontlib_ok = ((st == 0u) && (Disp_FontFlash_IsReady() != 0u)) ? 1u : 0u;
+    fontlib_ok = ((st == 0u) && (Disp_FontFlash_IsReady() != 0u)) ? 1u : 0u;
     Debug_Printf("[FLASH2] SPI2 font lib %s, JEDEC ID = 0x%06X\r\n",
-                 s_fontlib_ok ? "OK" : "FAIL", (unsigned int)id);
-    if (s_fontlib_ok)
+                 fontlib_ok ? "OK" : "FAIL", (unsigned int)id);
+    if (fontlib_ok)
     {
         /* 试读汉字"字"(GB2312 = 0xD7D6)，24x24 字模 72 字节 */
         st = Font_ReadChinese(0xD7D6u, gbuf, FONT_SIZE_24x24);
         Debug_Printf("[FLASH2] read CJK 0xD7D6 @24x24 -> %s\r\n",
                      (st == FONT_OK) ? "OK" : "FAIL");
-        s_fontlib_ok = (st == FONT_OK) ? 1u : 0u;
     }
 }
 
 /**
-  * @brief  刷新屏幕上的 RTC 时钟（HH:MM:SS 大字），500ms 节流、数值变化才重画
+  * @brief  刷新第 1 行左侧的时间（HH:MM:SS），500ms 节流、数值变化才重画
   * @param  force 1 = 强制重画（上电首次），0 = 内部节流
   */
 static void Ui_UpdateClock(uint8_t force)
 {
     static uint32_t  s_lastRtcTick = 0;
     static RTC_Time_t s_last = { 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu, 0xFFu };
-    const GUI_Font_t *fontSave;      /* 进入时的字体，画完必须还原（否则后面全变大字） */
     RTC_Time_t t;
     char buf[12];
-
-    fontSave = GUI_AsciiFont();
 
     if (force == 0u)
     {
@@ -181,7 +175,7 @@ static void Ui_UpdateClock(uint8_t force)
     if (RTC_ReadTime(&t) != 0u) return;                       /* 读失败：保持原显示 */
     if (force == 0u && memcmp(&t, &s_last, sizeof(t)) == 0u) return;
 
-    /* HH:MM:SS（字库 12x24 字体，比 16x32 小一档） */
+    /* HH:MM:SS（左上角，字库 8x16 字体） */
     buf[0] = (char)('0' + t.hour / 10u);
     buf[1] = (char)('0' + t.hour % 10u);
     buf[2] = ':';
@@ -192,12 +186,48 @@ static void Ui_UpdateClock(uint8_t force)
     buf[7] = (char)('0' + t.sec % 10u);
     buf[8] = '\0';
 
-    GUI_SetAsciiFont(&Disp_FontFlash_Ascii12x24);
-    GUI_SetCjkFont(NULL);
-    GUI_DrawString(UI_TIME_X, UI_TIME_Y, buf, GUI_BLACK, GUI_WHITE, 1);
-    GUI_SetAsciiFont(fontSave);          /* 还原成进入时的字体（原来是自我赋值，等于没还原） */
+    GUI_SetAsciiFont(&Disp_FontFlash_Ascii8x16);
+    GUI_DrawString(UI_TIME_X, UI_TOP_Y, buf, GUI_BLACK, GUI_WHITE, 1);
 
     s_last = t;
+}
+
+/**
+  * @brief  刷新第 1 行中间的日期（MM-DD），500ms 节流、日期变化才重画
+  * @param  force 1 = 强制重画（RTC 初始化后的首次），0 = 内部节流
+  */
+static void Ui_UpdateDate(uint8_t force)
+{
+    static uint32_t s_lastTick = 0;
+    static uint16_t s_lastDate = 0xFFFF;        /* 打包的月日，判断是否需要重画 */
+    RTC_Time_t t;
+    uint16_t    date;
+    char        buf[6];
+
+    if (force == 0u)
+    {
+        if ((uint32_t)(HAL_GetTick() - s_lastTick) < 500u) return;
+    }
+    s_lastTick = HAL_GetTick();
+
+    if (RTC_ReadTime(&t) != 0u) return;                       /* 读失败：保持原显示 */
+
+    date = (uint16_t)(t.month * 100u + t.day);
+    if ((force == 0u) && (date == s_lastDate)) return;
+
+    buf[0] = (char)('0' + t.month / 10u);
+    buf[1] = (char)('0' + t.month % 10u);
+    buf[2] = '-';
+    buf[3] = (char)('0' + t.day / 10u);
+    buf[4] = (char)('0' + t.day % 10u);
+    buf[5] = '\0';
+
+    /* 第 1 行中间：设置好字体再量宽居中 */
+    GUI_SetAsciiFont(&Disp_FontFlash_Ascii8x16);
+    GUI_DrawString((int16_t)((GUI_Width() - GUI_TextWidth(buf, 1u)) / 2u), UI_TOP_Y,
+                   buf, GUI_BLACK, GUI_WHITE, 1);
+
+    s_lastDate = date;
 }
 
 static void Ui_Init(void)
@@ -208,30 +238,19 @@ static void Ui_Init(void)
      * （这是驱动特有扩展，图形库通用接口里没有） */
     Disp_ILI9327_ClearPanel(GUI_WHITE);
 
-    /* 1. 实时时钟（大字 HH:MM:SS，Ui_Update 里每秒刷新） */
+    /* 第 1 行：时间先画一次；日期在 RTC_Init 之后由 main() 补画；
+     * 电池电压在 Ui_Update 首轮（40ms 后）画出 */
     Ui_UpdateClock(1u);
 
-    /* 2. 电池/充电电压（数值在 Ui_Update 里刷新）
-     *    PC0 = 充电/电源，PC1 = 电池；两个 33K 分压 => 实际电压 = ADC 电压 x2 */
-    GUI_DrawString(UI_ROW_X, UI_BAT_Y, "BAT:", GUI_BLACK, GUI_WHITE, 1);
-    GUI_DrawString(UI_ROW_X, UI_CHG_Y, "CHG:", GUI_BLACK, GUI_WHITE, 1);
-    GUI_DrawString(UI_UNIT_X, UI_BAT_Y, "mV", GUI_BLACK, GUI_WHITE, 1);
-    GUI_DrawString(UI_UNIT_X, UI_CHG_Y, "mV", GUI_BLACK, GUI_WHITE, 1);
-
-    /* 3. 按键信息：开机键状态 + TM1668 矩阵键值 */
-    GUI_DrawString(UI_ROW_X, UI_KEY_Y, "KEY:", GUI_BLACK, GUI_WHITE, 1);
-    GUI_DrawString(UI_VAL_X, UI_KEY_Y, "RELEASED", GUI_GREEN, GUI_WHITE, 1);
-    GUI_DrawString(UI_ROW_X, UI_TMKEY_Y, "TMKEY:", GUI_GRAY, GUI_WHITE, 1);
-    GUI_DrawString(UI_VAL_X, UI_TMKEY_Y, "--", GUI_GRAY, GUI_WHITE, 1);
-    GUI_DrawString(UI_ROW_X, UI_SEQ_Y, "SEQ:", GUI_GRAY, GUI_WHITE, 1);
-    GUI_DrawString(UI_VAL_X, UI_SEQ_Y, "-", GUI_GRAY, GUI_WHITE, 1);
+    /* 发送面板：发送输入框 + 软键盘（y=64 以下） */
+    SendPanel_Init();
 
     id = Disp_ILI9327_ReadID();
     Debug_Printf("[LCD] controller ID(0x04) = 0x%04X\r\n", id);
 }
 
 static uint32_t s_lastAdcTick = 0;
-static uint16_t s_lastBat = 0xFFFF, s_lastChg = 0xFFFF;
+static uint16_t s_lastBat = 0xFFFF;
 static uint8_t  s_adcDbgCnt = 0;
 
 /**
@@ -252,94 +271,62 @@ static void Adc_Maintain(void)
     {
         Debug_Printf("[ADC] recalibrate ok\r\n");
         s_lastBat = 0xFFFF;      /* 强制下一轮重画数值 */
-        s_lastChg = 0xFFFF;
     }
 }
 
 static void Ui_Update(void)
 {
-    uint32_t now     = HAL_GetTick();
-    uint8_t  pressed = POWER_KeyIsPressed();
-    uint16_t bat, chg;
+    uint32_t now = HAL_GetTick();
+    uint16_t bat;
+    char     buf[8];
 
     Adc_Maintain();          /* ADC 掉链子时自动重校准 */
 
-    /* 电源电压：每 500ms 采一次，只在数值变化时才重画 */
+    /* 电池电压：每 500ms 采一次，变化才重画（第 1 行右上角，X.XXV） */
     if ((uint32_t)(now - s_lastAdcTick) >= 500u)
     {
         s_lastAdcTick = now;
-
         bat = (uint16_t)PowerAdc_BatMv();
-        chg = (uint16_t)PowerAdc_PowerMv();
 
         /* 调试：每 2 秒打印两个通道的原始值和折算值（读的是同一组缓存，不额外采样） */
         if (++s_adcDbgCnt >= 4u)
         {
             s_adcDbgCnt = 0;
-            Debug_Printf("[ADC] PC0 raw=%u -> %u mV | PC1 raw=%u -> %u mV | err=%u\r\n",
-                         (unsigned int)PowerAdc_ReadRaw(PWR_ADC_CH_POWER), (unsigned int)chg,
-                         (unsigned int)PowerAdc_ReadRaw(PWR_ADC_CH_BAT),   (unsigned int)bat,
-                         (unsigned int)PowerAdc_LastError());
+            Debug_Printf("[ADC] PC0=%u mV | PC1=%u mV | err=%u | irq3=%u\r\n",
+                         (unsigned int)PowerAdc_PowerMv(),
+                         (unsigned int)bat,
+                         (unsigned int)PowerAdc_LastError(),
+                         (unsigned int)g_uart3IrqCnt);
         }
 
         if (bat != s_lastBat)
         {
             s_lastBat = bat;
-            GUI_DrawNumber(UI_VAL_X, UI_BAT_Y, (int32_t)bat, 5, GUI_BLACK, GUI_WHITE, 1);
-        }
-        if (chg != s_lastChg)
-        {
-            s_lastChg = chg;
-            GUI_DrawNumber(UI_VAL_X, UI_CHG_Y, (int32_t)chg, 5, GUI_BLACK, GUI_WHITE, 1);
+            /* mV -> "X.XXV"（电池实际 3.7~4.2V，保留两位小数） */
+            buf[0] = (char)('0' + bat / 1000u);
+            buf[1] = '.';
+            buf[2] = (char)('0' + (bat / 100u) % 10u);
+            buf[3] = (char)('0' + (bat / 10u) % 10u);
+            buf[4] = 'V';
+            buf[5] = '\0';
+
+            GUI_SetAsciiFont(&Disp_FontFlash_Ascii8x16);
+            GUI_DrawString((int16_t)(GUI_Width() - GUI_TextWidth(buf, 1u) - 2u),
+                           UI_TOP_Y, buf, GUI_BLACK, GUI_WHITE, 1);
         }
     }
 
-    /* 实时时钟（内部 500ms 节流，秒变化才重画） */
+    /* 第 1 行的时间与日期（各自内部 500ms 节流，变化才重画） */
     Ui_UpdateClock(0u);
-
-    /* 开机键状态：按下=红，松开=绿 */
-    GUI_DrawString(UI_VAL_X, UI_KEY_Y, pressed ? "PRESSED " : "RELEASED",
-                   pressed ? GUI_RED : GUI_GREEN, GUI_WHITE, 1);
+    Ui_UpdateDate(0u);
 }
 
-/**
-  * @brief  显示当前按下的键：按按下先后顺序排列，松开的键消失、后面的自动前移
-  *         内容没变化就不重画（避免每 20ms 刷屏）
-  */
-static void Ui_UpdateKeySeq(void)
-{
-    static char s_lastSeq[TM1668_KEY_LIST_MAX + 1u] = "";
-
-    char    buf[TM1668_KEY_LIST_MAX + 1u];
-    uint8_t n = TM1668_GetPressedKeys(buf, (uint8_t)sizeof(buf));
-    uint16_t x = UI_VAL_X;
-    uint8_t  i;
-
-    if (strcmp(buf, s_lastSeq) == 0u) return;      /* 没变化就不重画 */
-    strcpy(s_lastSeq, buf);
-    Debug_Printf("[TM1668] pressed seq = %s\r\n", (n == 0u) ? "-" : buf);
-
-    /* 先擦掉这一行右侧：字符串变短时否则会留下旧字符的残影 */
-    GUI_FillRect(UI_VAL_X, UI_SEQ_Y, (int16_t)(GUI_Width() - 1u),
-                 (int16_t)(UI_SEQ_Y + GUI_CharHeight() - 1u), GUI_WHITE);
-
-    if (n == 0u)
-    {
-        GUI_DrawString(UI_VAL_X, UI_SEQ_Y, "-", GUI_GRAY, GUI_WHITE, 1);
-        return;
-    }
-
-    for (i = 0u; i < n; i++)                       /* 逐个字符画，字符间空 2px */
-    {
-        x = (uint16_t)(GUI_DrawChar((int16_t)x, UI_SEQ_Y, buf[i], GUI_BLUE, GUI_WHITE, 1) + 2u);
-    }
-}
-
-/* 屏幕上显示关机提示，然后断电 */
+/* 屏幕上显示关机提示（底部预留区），然后断电 */
 static void Ui_ShowPowerOff(void)
 {
-    GUI_FillRect(0, 204, (int16_t)(GUI_Width() - 1u), (int16_t)(GUI_Height() - 1u), GUI_RED);
-    GUI_DrawString(100, 216, "POWER OFF...", GUI_WHITE, GUI_RED, 2);
+    GUI_FillRect(0, (int16_t)(TERM_Y0 + TERM_ROWS * 8u), (int16_t)(GUI_Width() - 1u),
+                 (int16_t)(GUI_Height() - 1u), GUI_RED);
+    GUI_DrawString(100, 180, "POWER OFF...", GUI_WHITE, GUI_RED, 2);
     GUI_SetBacklight(0);
     HAL_Delay(300);
 }
@@ -347,30 +334,21 @@ static void Ui_ShowPowerOff(void)
 static void Ui_Task(void)
 {
     static uint32_t s_keyTick = 0;
-    static uint16_t s_lastTmKey = 0xFFFF;
 
     uint32_t now = HAL_GetTick();
-    uint8_t  ch;
 
     POWER_Poll(now);               /* 按键去抖 + 长按计时（每轮都要调用） */
 
-    /* TM1668 按键轮询：20ms 一次（内部含去抖），按下时上报映射后的键值 */
+    /* 软键盘面板：2/4/6/8 移动光标、5 确认、'.' 大小写、'=' 发送、长按 '<' 3 秒关机 */
     if ((uint32_t)(now - s_keyTick) >= 20u)
     {
-        uint8_t key = TM1668_GetKey();
-
         s_keyTick = now;
-        if (key != 0u)
+        if (SendPanel_Task() != 0u)
         {
-            Debug_Printf("[TM1668] key value = %u\r\n", (unsigned int)key);
-            if ((uint16_t)key != s_lastTmKey)
-            {
-                s_lastTmKey = (uint16_t)key;
-                GUI_DrawNumber(UI_VAL_X, UI_TMKEY_Y, (int32_t)key, 2, GUI_RED, GUI_WHITE, 1);
-            }
+            Debug_Printf("[PWR] long press '<' 3s -> shutdown\r\n");
+            Ui_ShowPowerOff();
+            POWER_Shutdown();
         }
-
-        Ui_UpdateKeySeq();          /* 刷新"按下顺序"行（内部变了才重画） */
     }
 
     /* 长按开机键 3 秒 -> 软件断电 */
@@ -382,18 +360,15 @@ static void Ui_Task(void)
         POWER_Shutdown();          /* 拉低 POW_SOFT_EN 并保持，系统断电 */
     }
 
-    /* 备用验收手段：串口发一个小写 o 也能关机（用来单独验证关机通路） */
-    if (HAL_UART_Receive(&huart1, &ch, 1, 0) == HAL_OK)
+    /* 串口终端：显示 USART3 收到的 ASCII（换行/滚动） */
+    if (SerialTerm_Task() != 0u)
     {
-        if (ch == 'o' || ch == 'O')
-        {
-            Debug_Printf("[PWR] shutdown by UART command\r\n");
-            Ui_ShowPowerOff();
-            POWER_Shutdown();
-        }
+        Debug_Printf("[PWR] shutdown by UART command\r\n");
+        Ui_ShowPowerOff();
+        POWER_Shutdown();
     }
 
-    if (now - s_lastRefresh >= 40/*DEMO_REFRESH_MS*/)
+    if (now - s_lastRefresh >= UI_REFRESH_MS)
     {
         s_lastRefresh = now;
         Ui_Update();
@@ -489,6 +464,12 @@ int main(void)
     Debug_Printf("[TM1668] init failed\r\n");
   }
 
+  /* 串口终端：USART3(9600) 中断接收，屏底滚动显示 */
+  SerialTerm_Init();
+  /* 诊断：RxState=2(BUSY_RX) 说明中断接收已挂上；=1(READY) 说明没挂上 */
+  Debug_Printf("[UART3] RxState=%d ErrorCode=0x%02X\r\n",
+               (int)huart3.RxState, (unsigned int)huart3.ErrorCode);
+
   /* PCF8563 RTC：首次上电写入基线时间；之后仅当读到的时间小于基线（掉电过）才重设 */
   if (RTC_Init() == 0u)
   {
@@ -505,6 +486,7 @@ int main(void)
   {
     Debug_Printf("[RTC] PCF8563 not found / sync failed (check I2C1 pull-up)\r\n");
   }
+  Ui_UpdateDate(1u);       /* RTC 同步完成后画第一屏日期（Ui_Init 时 RTC 还没初始化） */
   Debug_Printf("[LCD] %dx%d init done.\r\n", GUI_Width(), GUI_Height());
   /* USER CODE END 2 */
 

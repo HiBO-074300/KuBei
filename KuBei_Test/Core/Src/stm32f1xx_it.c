@@ -59,8 +59,10 @@
 extern DMA_HandleTypeDef hdma_spi1_tx;
 extern DMA_HandleTypeDef hdma_spi1_rx;
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart3;
+extern UART_HandleTypeDef huart3;
 /* USER CODE BEGIN EV */
-
+volatile uint32_t g_uart3IrqCnt = 0u;   /* 诊断：USART3 中断进入计数 */
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -242,6 +244,34 @@ void USART1_IRQHandler(void)
 
   /* USER CODE END USART1_IRQn 1 */
 }
+
+/**
+  * @brief This function handles USART3 global interrupt.
+  */
+void USART3_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_IRQn 0 */
+  g_uart3IrqCnt++;
+  /* USER CODE END USART3_IRQn 0 */
+  HAL_UART_IRQHandler(&huart3);
+  /* USER CODE BEGIN USART3_IRQn 1 */
+
+  /* USER CODE END USART3_IRQn 1 */
+}
+
+///**
+//  * @brief This function handles USART3 global interrupt.
+//  */
+//void USART3_IRQHandler(void)
+//{
+//  /* USER CODE BEGIN USART3_IRQn 0 */
+
+//  /* USER CODE END USART3_IRQn 0 */
+//  HAL_UART_IRQHandler(&huart3);
+//  /* USER CODE BEGIN USART3_IRQn 1 */
+
+//  /* USER CODE END USART3_IRQn 1 */
+//}
 
 /* USER CODE BEGIN 1 */
 
