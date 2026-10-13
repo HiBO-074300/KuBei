@@ -225,6 +225,13 @@ uint8_t PowerAdc_Init(void)
 {
     uint16_t dummy1, dummy2;
 
+    /* 强制单通道模式（覆盖 CubeMX 生成的扫描双通道配置）：
+     * F1 扫描模式(>=2 个转换)下 EOC 只在整个序列结束置位，且
+     * HAL_ADC_PollForConversion 会清 EOC，逐通道轮询读不到正确数据 */
+    hadc1.Init.ScanConvMode    = ADC_SCAN_DISABLE;
+    hadc1.Init.NbrOfConversion = 1u;
+    if (HAL_ADC_Init(&hadc1) != HAL_OK) return 1u;
+
     if (PowerAdc_Calibrate() != 0u) return 1u;
 
     s_ready = 1u;
@@ -331,3 +338,26 @@ uint32_t PowerAdc_ReadVddaMv(void)
     /* VREFINT 典型 1.20V：VDDA = 1200mV * 4095 / raw */
     return (uint32_t)1200u * 4095u / raw;
 }
+
+#if (PWR_ADC_SEQ_SCAN == 1)
+/**
+  * @brief  诊断用：把 rank1 临时切到指定通道独立采样（绕开扫描配对）。
+  *         用来验证"两个通道数值相同"是软件串读还是硬件等电位：
+  *         独立采样和配对采样结果一致 -> 硬件两点的电位本来就相同。
+  * @param  channel ADC_CHANNEL_10 / ADC_CHANNEL_11 ...
+  * @retval 原始码值（0xFFFF = 配置失败）
+  */
+uint16_t PowerAdc_DebugSample(uint32_t channel)
+{
+    uint16_t v;
+
+    if (PowerAdc_ConfigRank1(channel, PWR_ADC_RANK1_SAMPLETIME) != 0u) return 0xFFFFu;
+
+    (void)PowerAdc_SampleOnce();            /* 切换通道后的首个采样丢弃 */
+    v = PowerAdc_SampleOnce();
+
+    (void)PowerAdc_ConfigRank1(ADC_CHANNEL_10, PWR_ADC_RANK1_SAMPLETIME);
+    s_pairValid = 0u;                       /* rank1 动过了，让缓存失效 */
+    return v;
+}
+#endif

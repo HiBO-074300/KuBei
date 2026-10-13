@@ -48,13 +48,13 @@ extern "C" {
 #endif
 
 /**
-  * ADC 配置模式，必须与 CubeMX 里的设置一致：
-  *   1 = 扫描双通道（ScanConvMode = Enable, NbrOfConversion = 2,
-  *        Rank1 = 通道10(PC0), Rank2 = 通道11(PC1)）—— 当前工程用的就是这个；
-  *        一次 Start 顺序读出两个通道，ContinuousConvMode 开/关都兼容
-  *        （建议关掉连续模式：省电，也不会出现"读到另一个通道"的混淆）
-  *   0 = 单通道轮询（ScanConvMode = Disable, NbrOfConversion = 1）
-  *        每次读之前由软件切换通道
+  * ADC 配置模式（运行时由 PowerAdc_Init 强制对齐，与 CubeMX 面板设置无关）：
+  *   0 = 单通道轮询 —— F1 必须用这个！
+  *       原因：F1 HAL 限制，扫描模式(>=2 个转换)下 EOC 只在整个序列结束才置位，
+  *       HAL_ADC_PollForConversion 退化为固定延时且每次会清 EOC，导致连续两次
+  *       GetValue 读到同一个 DR（= 序列最后一个通道），两通道数值永远相同。
+  *       单通道模式（每次读前软件切通道）EOC 每次转换都置位，轮询才可靠。
+  *   1 = 扫描双通道（仅当改用 DMA 搬运时才有意义）
   */
 #ifndef PWR_ADC_SEQ_SCAN
 #define PWR_ADC_SEQ_SCAN      0

@@ -81,8 +81,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x6707CF46)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h)(0x6707CF46)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x6707CF46)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x66A07C83)
-F (../Core/Src/power_adc.c)(0x6AB9BB52)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\power_adc.o --omf_browse kubei_test\power_adc.crf --depend kubei_test\power_adc.d)
-I (../Core/Inc/power_adc.h)(0x6AB9BCC6)
+F (../Core/Src/power_adc.c)(0x6ACDD4C8)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\power_adc.o --omf_browse kubei_test\power_adc.crf --depend kubei_test\power_adc.d)
+I (../Core/Inc/power_adc.h)(0x6ACDD4C1)
 I (../Core/Inc/main.h)(0x6ACC9F8D)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x66A07C83)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6ACC9F8D)
@@ -203,8 +203,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h)(0x6707CF46)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x66A07C83)
 I (../Core/Inc/i2c.h)(0x6ACC9F8B)
 I (D:\APP\Keil_v5\ARM\ARMCC\include\string.h)(0x569DEA3A)
-F (../Core/Src/serial_term.c)(0x6ACD9BBD)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\serial_term.o --omf_browse kubei_test\serial_term.crf --depend kubei_test\serial_term.d)
-I (../Core/Inc/serial_term.h)(0x6ACDA259)
+F (../Core/Src/serial_term.c)(0x6ACDC9D5)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\serial_term.o --omf_browse kubei_test\serial_term.crf --depend kubei_test\serial_term.d)
+I (../Core/Inc/serial_term.h)(0x6ACDC9C4)
 I (../Core/Inc/main.h)(0x6ACC9F8D)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x66A07C83)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6ACC9F8D)
@@ -251,7 +251,7 @@ I (../Core/Inc/font_lib.h)(0x6ACC49D0)
 I (../Core/Inc/spi_flash.h)(0x6ACC49D0)
 I (../Core/Inc/spi.h)(0x6ACC9F8C)
 I (D:\APP\Keil_v5\ARM\ARMCC\include\string.h)(0x569DEA3A)
-F (../Core/Src/send_panel.c)(0x6ACDB3C6)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\send_panel.o --omf_browse kubei_test\send_panel.crf --depend kubei_test\send_panel.d)
+F (../Core/Src/send_panel.c)(0x6ACDC03F)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\send_panel.o --omf_browse kubei_test\send_panel.crf --depend kubei_test\send_panel.d)
 I (../Core/Inc/send_panel.h)(0x6ACDB3E1)
 I (../Core/Inc/main.h)(0x6ACC9F8D)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x66A07C83)
@@ -300,7 +300,7 @@ I (../Core/Inc/spi_flash.h)(0x6ACC49D0)
 I (../Core/Inc/spi.h)(0x6ACC9F8C)
 I (../Core/Inc/tm1668.h)(0x6ACD0057)
 I (../Core/Inc/tm1668_cfg.h)(0x6AC9E58B)
-I (../Core/Inc/serial_term.h)(0x6ACDA259)
+I (../Core/Inc/serial_term.h)(0x6ACDC9C4)
 I (D:\APP\Keil_v5\ARM\ARMCC\include\string.h)(0x569DEA3A)
 F (../Core/Src/spi_flash.c)(0x6ACC49D0)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\spi_flash.o --omf_browse kubei_test\spi_flash.crf --depend kubei_test\spi_flash.d)
 I (../Core/Inc/spi_flash.h)(0x6ACC49D0)
@@ -555,7 +555,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h)(0x66A07C83)
 I (../Core/Inc/font_lib.h)(0x6ACC49D0)
 I (../Core/Inc/spi_flash.h)(0x6ACC49D0)
 I (../Core/Inc/spi.h)(0x6ACC9F8C)
-F (../Core/Src/main.c)(0x6ACDBDEC)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\main.o --omf_browse kubei_test\main.crf --depend kubei_test\main.d)
+F (../Core/Src/main.c)(0x6ACDD4CC)(--c99 -c --cpu Cortex-M3 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I D:\Desktop\KuBei_Test\KuBei_Test\MDK-ARM\RTE-I D:\APP\Keil_v5\ARM\PACK\ARM\CMSIS\4.5.0\CMSIS\Include-I D:\APP\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="518" -D_RTE_ -DSTM32F10X_HD -DUSE_HAL_DRIVER -DSTM32F103xE-o kubei_test\main.o --omf_browse kubei_test\main.crf --depend kubei_test\main.d)
 I (../Core/Inc/main.h)(0x6ACC9F8D)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x66A07C83)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6ACC9F8D)
@@ -610,10 +610,10 @@ I (../Core/Inc/disp_font_flash.h)(0x6AB8E0C5)
 I (../Core/Inc/font_lib.h)(0x6ACC49D0)
 I (../Core/Inc/spi_flash.h)(0x6ACC49D0)
 I (../Core/Inc/power_ctrl.h)(0x6AB8C105)
-I (../Core/Inc/power_adc.h)(0x6AB9BCC6)
+I (../Core/Inc/power_adc.h)(0x6ACDD4C1)
 I (../Core/Inc/tm1668.h)(0x6ACD0057)
 I (../Core/Inc/tm1668_cfg.h)(0x6AC9E58B)
-I (../Core/Inc/serial_term.h)(0x6ACDA259)
+I (../Core/Inc/serial_term.h)(0x6ACDC9C4)
 I (../Core/Inc/send_panel.h)(0x6ACDB3E1)
 I (../Core/Inc/rtc_pcf8563.h)(0x6AB93C07)
 I (../Core/Inc/rtc_pcf8563_cfg.h)(0x6AB93BDB)

@@ -326,6 +326,9 @@ uint8_t SendPanel_Task(void)
     case '5':                                       /* È·ÈÏ */
         Panel_Confirm();
         return 0u;
+    case '/':                                       /* É¾³ý */
+        TxBox_Backspace();
+        return 0u;
     case '=':                                       /* ·¢ËÍ */
         Panel_Send();
         return 0u;

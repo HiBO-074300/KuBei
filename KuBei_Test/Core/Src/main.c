@@ -110,7 +110,7 @@ static void Debug_Printf(const char *fmt, ...)
     if (n > 0)
     {
         if (n > (int)sizeof(buf) - 1) n = (int)sizeof(buf) - 1;
-        HAL_UART_Transmit(&huart1, (uint8_t *)buf, (uint16_t)n, 100);
+        HAL_UART_Transmit(&huart3, (uint8_t *)buf, (uint16_t)n, 100);
     }
 }
 
@@ -286,15 +286,18 @@ static void Ui_Update(void)
     if ((uint32_t)(now - s_lastAdcTick) >= 500u)
     {
         s_lastAdcTick = now;
-        bat = (uint16_t)PowerAdc_BatMv();
+        bat = (uint16_t)PowerAdc_PowerMv();
 
         /* 调试：每 2 秒打印两个通道的原始值和折算值（读的是同一组缓存，不额外采样） */
         if (++s_adcDbgCnt >= 4u)
         {
             s_adcDbgCnt = 0;
-            Debug_Printf("[ADC] PC0=%u mV | PC1=%u mV | err=%u | irq3=%u\r\n",
+            Debug_Printf("[ADC] raw PC0=%u PC1=%u | %u/%u mV | vdda=%u | err=%u | irq3=%u\r\n",
+                         (unsigned int)PowerAdc_ReadRaw(PWR_ADC_CH_POWER),
+                         (unsigned int)PowerAdc_ReadRaw(PWR_ADC_CH_BAT),
                          (unsigned int)PowerAdc_PowerMv(),
-                         (unsigned int)bat,
+                         (unsigned int)PowerAdc_BatMv(),
+                         (unsigned int)PowerAdc_ReadVddaMv(),
                          (unsigned int)PowerAdc_LastError(),
                          (unsigned int)g_uart3IrqCnt);
         }
@@ -324,7 +327,7 @@ static void Ui_Update(void)
 /* 屏幕上显示关机提示（底部预留区），然后断电 */
 static void Ui_ShowPowerOff(void)
 {
-    GUI_FillRect(0, (int16_t)(TERM_Y0 + TERM_ROWS * 8u), (int16_t)(GUI_Width() - 1u),
+    GUI_FillRect(0, (int16_t)(TERM_Y0 + TERM_ROWS * 16u), (int16_t)(GUI_Width() - 1u),
                  (int16_t)(GUI_Height() - 1u), GUI_RED);
     GUI_DrawString(100, 180, "POWER OFF...", GUI_WHITE, GUI_RED, 2);
     GUI_SetBacklight(0);
